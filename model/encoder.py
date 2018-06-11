@@ -11,6 +11,7 @@ class Encoder(nn.Module):
         self.hidden_size = hidden_size
         self.bidirectional = True
         self.embedding = nn.Embedding(num_embeddings=lang.vacab_size, embedding_dim=embedding_dim)
+        self.dropout = nn.Dropout(p=0.5)
         self.rnn = nn.GRU(
             input_size=embedding_dim,
             dropout=0.5,
@@ -19,13 +20,10 @@ class Encoder(nn.Module):
             bidirectional=self.bidirectional
         )
 
-    def begin_state(self):
-        bidirect = 2 if self.bidirectional else 1
-        return torch.zeros(self.num_layers * bidirect, 1, self.hidden_size, dtype=torch.float, device=run_device())
-
-    def forward(self, words, state):
+    def forward(self, words, state=None):
         words = words.to(run_device())
         input_len = len(words)
         words = self.embedding(words).view(input_len, 1, -1)
-        output, state = self.run(words, state)
+        input = self.dropout(words)
+        output, state = self.run(input, state)
         return output, state
